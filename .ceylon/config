@@ -1,0 +1,9 @@
+[defaults]
+encoding=UTF-8
+
+[compiler]
+source=./source
+source=./test-source
+
+[formattool]
+profile=default

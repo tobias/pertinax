@@ -1,0 +1,8 @@
+.settings/
+modules
+test-modules
+JDTClasses
+classes
+build
+.exploded
+reports
