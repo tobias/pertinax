@@ -1,7 +1,7 @@
 To implement:
 
-* PersistentArray
-* PersistentLinkedList
+* ✓ PersistentArray
+* ✓ PersistentLinkedList
 * PersistentHashMap
 * PersistentHashSet
 * PersistentSortedMap?
