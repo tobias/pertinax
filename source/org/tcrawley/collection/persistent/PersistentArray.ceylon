@@ -160,8 +160,7 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
         if (this.size > 0 &&
                     index < this.size) {
             value leaf = lookupNode(this.ir.assertRoot(), this.ir.depth, index);
-            if (exists leaf) {
-                assert (is Leaf leaf);
+            if (is Leaf leaf) {
     
                 return leaf.get(levelIndex(0, index));
             }
