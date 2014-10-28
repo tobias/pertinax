@@ -10,9 +10,6 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
     value scale = 5;
     value nodeSize = 2 ^ scale;
     
-    Array<Thing?> newNodeContent<Thing>() => 
-            Array<Thing?>({ for (i in 0..(nodeSize - 1)) null });
-    
     interface Node of Branch, Leaf {
         shared formal Element|Node? get(Integer localIndex);
         shared formal Node set(Integer localIndex, Element?|Node item);
@@ -22,55 +19,63 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
     class Leaf(content, size) satisfies Node {
         shared actual Element? get(Integer localIndex) {
             assert (0 <= localIndex < nodeSize);
-            return content[localIndex];
+            return this.content?.get(localIndex) else null;
         }
         
-        string => "``this.content.size`` ``this.content.string``";
+        string => this.content?.string else "{}";
         
         shared actual Leaf set(Integer localIndex, Element?|Node item) {
-            assert (0 <= localIndex < nodeSize,
+            assert (0 <= localIndex <= this.size,
                 is Element? item);
-            value newContent = newNodeContent<Element>();
-            this.content.copyTo(newContent);
+            value newSize = localIndex < this.size then this.size else this.size + 1; 
+            value newContent = 
+                    Array<Element?>({for (i in 0:newSize) null});
+            if (exists it = this.content) {
+                it.copyTo(newContent);
+            }
             newContent.set(localIndex, item);
-            return Leaf(newContent,
-                localIndex < this.size then this.size else localIndex);
+            
+            return Leaf(newContent, newSize);
         }
         
         shared actual Integer size;
-        Array<Element?> content;
+        Array<Element?>? content;
     }
     
     class Branch(content, size) satisfies Node {
         shared actual Node? get(Integer localIndex) {
-            assert (0 <= localIndex < nodeSize);
-            return content[localIndex];
+            assert (0 <= localIndex <= this.size);
+            return content?.get(localIndex) else null;
         }
-        shared actual String string => "``this.content.size`` ``this.content.string``";
+        shared actual String string => this.content?.string else "{}";
         
         shared Node getWithCreate(Integer localIndex, Integer level) {
             value node = get(localIndex);
             if (exists node) {
                 return node;
             } else if (level == 0) {
-                return Leaf(newNodeContent<Element>(), 0);
+                return Leaf(null, 0);
             } else {
-                return Branch(newNodeContent<Node>(), 0);
+                return Branch(null, 0);
             }
         }
         
         shared actual Branch set(Integer localIndex, Element?|Node item) {
-            assert (0 <= localIndex < nodeSize,
+            assert (0 <= localIndex <= this.size,
                 is Node item);
-            value newContent = newNodeContent<Node>();
-            this.content.copyTo(newContent);
+            value newSize = localIndex < this.size then this.size else this.size + 1; 
+            value newContent = Array<Node?>({for (i in 0:newSize) null});
+            if (exists it = this.content) {
+                it.copyTo(newContent);
+            }
             newContent.set(localIndex, item);
-            return Branch(newContent,
-                localIndex < this.size then this.size else localIndex);
+            
+            return Branch(newContent, newSize);
+                
         }
         
         shared actual Integer size;
-        Array<Node?> content;
+        Array<Node?>? content;
     }
     
     class InternalRepresentation(shared Node? root, shared Integer size, shared Integer depth) {
@@ -83,7 +88,7 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
     Integer levelIndex(Integer level, Integer globalIndex) =>
         globalIndex.rightLogicalShift(level * this.scale).and(this.nodeSize - 1);
     
-    Node updateWalk(Node node, Integer level, Integer globalIndex, Element? item) {
+    Node updateWalk(Node? node, Integer level, Integer globalIndex, Element? item) {
         value localIndex = levelIndex(level, globalIndex);
         if (level > 0) {
             assert (is Branch node);
@@ -91,9 +96,11 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
                     level - 1,
                     globalIndex,
                     item));
-        } else {
+        } else if (is Node node) {
             assert (is Leaf node);
             return node.set(localIndex, item);
+        } else {
+            return Leaf(Array<Element?>({item}), 1);
         }
     }
     
@@ -101,11 +108,11 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
     InternalRepresentation internalSet(InternalRepresentation ir,
         Integer index, Element? element) {
         assert (index <= ir.size);
-        variable Node currNode = ir.root else Leaf(newNodeContent<Element>(), 0);
+        variable Node? currNode = ir.root;
         variable Integer depth = ir.depth;
         
         if (index >= this.nodeSize ^ (depth + 1)) {
-            currNode = Branch(newNodeContent<Node>(), 0).set(0, currNode);
+            currNode = Branch(Array<Node?>({currNode}), 1);
             depth++;
         }
         
@@ -157,12 +164,11 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
     
     shared actual Element? getFromFirst(Integer index) {
         assert (index >= 0);
-        if (this.size > 0 &&
-                    index < this.size) {
+        if (index < this.size) {
             value leaf = lookupNode(this.ir.assertRoot(), this.ir.depth, index);
             if (is Leaf leaf) {
-    
-                return leaf.get(levelIndex(0, index));
+
+                return leaf.get(levelIndex(0, index));                
             }
         }
         

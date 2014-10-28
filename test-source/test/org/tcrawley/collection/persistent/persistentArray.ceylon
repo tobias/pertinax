@@ -34,6 +34,7 @@ class PersistentArrayTest() {
         assertEquals(ary2.get(1), "bar");
         
         assertEquals(ary.get(0), "foo");
+        assertEquals(ary.size, 1);
         assertEquals(ary.get(1), null);
     }
     
