@@ -78,11 +78,15 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
         Array<Node?>? content;
     }
     
-    class InternalRepresentation(shared Node? root, shared Integer size, shared Integer depth) {
+    class InternalRepresentation(root, size, depth) {
         shared Node assertRoot() {
             assert (is Node root);
             return root;
         }
+        
+        shared Node? root;
+        shared Integer size;
+        shared Integer depth;
     }
     
     Integer levelIndex(Integer level, Integer globalIndex) =>
@@ -118,7 +122,7 @@ shared class PersistentArray<Element>({Element*} contents = {}) satisfies List<E
         
         return InternalRepresentation {
             root  = updateWalk(currNode, depth, index, element);
-            size  = index + 1 > ir.size then index + 1 else ir.size;
+            size  = index < ir.size then ir.size else ir.size + 1;
             depth = depth;
         };
     }
